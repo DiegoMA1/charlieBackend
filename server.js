@@ -36,7 +36,7 @@ router.get("/", function (req, res) {
   res.json({
     mensaje: "keep alive",
   });
-})
+});
 
 // declarar los modelos
 var Product = require("./app/models/product");
@@ -65,7 +65,7 @@ router
           return;
         }
         else {
-          res.status(200).send({ message: "Login success"});
+          res.status(200).send({ message: "Login success", idUser: usuarioDB._id});
         }
       });
     }
@@ -74,7 +74,7 @@ router
     }
   });
 
-router
+/* router
   .route("/logout")
   .get(function (req, res) {
     if (req.session.key) {
@@ -85,12 +85,13 @@ router
     else {
       res.status(400).send({ message: "User not signed in"});
     }
-  });
+  }); */
 
 router
   .route("/productsUsers")
   .post(async function (req, res) {
-    if (req.body.idUser && req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
+    console.log(req.body)
+    //if (req.body.idUser && req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
       var idProd
       await productUser.aggregate([{ $unwind: '$products' }, { $sort: {'products.idProd': -1}},{$limit: 1}], function (err, idProduct) {
         if (err) {
@@ -137,10 +138,10 @@ router
           res.json({ mensaje: "Producto agregado" })
         }
       });
-    }
-    else {
-      res.status(400).send({error: "missing fields"})
-    }
+    //}
+    //else {
+      //res.status(400).send({error: "missing fields"})
+    //}
     
   })
 router
@@ -234,16 +235,32 @@ router
 router
   .route("/productsUsers/:id_user")
   .get(function (req, res) {
-    productUser.find({idUser: req.params.id_user}, function (error, products) {
+    productUser.aggregate([
+      {$match: {'idUser': parseInt(req.params.id_user)} },
+      {$lookup: 
+        {from: 'users',
+        localField: 'idUser',
+        foreignField: '_id',
+        as: 'user'}
+      },
+      {$unwind: '$user' },
+      {$project: 
+        {"idUser":1,
+        'products':1,
+        'user.name': 1,
+        'user.lname': 1,
+        'user.profile_pic': 1}
+      }
+    ],function (error, result) {
       if (error) {
         res.status(404).send({ message: "not found" });
         return;
       }
-      if (products == "") {
-        res.status(404).send({ products: "not found" });
+      if (result == null) {
+        res.status(404).send({ result: "not found" });
         return;
       }
-      res.status(200).send(products);
+      res.status(200).send(result);
     });
   })
 
@@ -289,6 +306,7 @@ router
                       {$project: 
                         {"time":1,
                         'user.name': 1,
+                        'user.lname': 1,
                         'user.profile_pic': 1,
                         'message': 1}
                       }
