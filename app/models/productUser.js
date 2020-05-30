@@ -6,4 +6,4 @@ var productsUsersSchema = new Schema({
     products: Array
 }, { versionKey: false });
 
-module.exports = mongoose.model("ProductUser", productsUsersSchema, 'productsUsers');
+module.exports = mongoose.model("ProductUser", productsUsersSchema, 'productsUser');
