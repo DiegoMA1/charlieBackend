@@ -624,21 +624,36 @@ router
     }).sort('-_id');
   })
   .post(async function (req, res) {
-      var productos;
-      var compra = new Compra();
-      await Carrito.find({idUser: req.params.id_user}, async function (err, carrito) {
-        if (err) {
-          res.send(err);
-          return;
-        }
-        else {
-        console.log(carrito)
-        productos = carrito[0].products;
-       
-        compra.products = productos;
-       
-        compra.idUser = req.params.id_user;
-        compra.address = req.body.address;
+    var productos;
+    var compra = new Compra();
+    await Carrito.find({idUser: req.params.id_user}, async function (err, carrito) {
+      if (err) {
+        res.send(err);
+        return;
+      }
+      else {
+      console.log(carrito)
+      productos = carrito[0].products;
+
+      productos.forEach(element => {
+        var idProd = parseInt(element.idProd);
+
+        productUser.updateOne({"products.idProd": idProd}, {$pull: {products: {"idProd": idProd}}}, async function (error, result) {
+          if (error) {
+            console.log(error)
+            res.status(404).send({ message: "not found" });
+            return;
+          }
+          if (result == null) {
+            res.status(404).send({ result: "not found" });
+            return;
+          }
+        });
+      });
+          compra.products = productos;
+     
+          compra.idUser = req.params.id_user;
+          compra.address = req.body.address;
 
         try {
           await compra.save(function (err) {
@@ -662,9 +677,9 @@ router
         } catch (error) {
           res.status(500).send({ error: error });
         }  
-      }
-    })
-  });
+    }
+  })
+});
 
 router
   .route("/validarCompra/:id_user")
