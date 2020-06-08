@@ -8,6 +8,8 @@ var morgan = require("morgan");
 var passwordHash = require('password-hash');
 var port = process.env.PORT || 8080; ///puerto disponible
 
+const jwt = require('jsonwebtoken');
+
 app.use(morgan("dev"));
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -56,16 +58,17 @@ router
           return;
         }
         if (!usuarioDB) {
-          res.status(400).send({ message: "Usuario o password incorrectos" });
+          res.status(401).send({ message: "Usuario o password incorrectos" });
           return;
         }
 
         if (!passwordHash.verify(req.body.password, usuarioDB.password)) {
-          res.status(400).send({ message: "Usuario o password incorrectos" });
+          res.status(401).send({ message: "Usuario o password incorrectos" });
           return;
         }
         else {
-          res.status(200).send({ message: "Login success", key: {_id: usuarioDB._id, email: usuarioDB.email}});
+          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey')
+          res.status(200).send({ message: "Login success", _id: usuarioDB._id, token: token});
         }
       });
     }
@@ -82,7 +85,7 @@ router
 
   router
   .route("/productsUsers")
-  .post(async function (req, res) {
+  .post(verifyToken, async function (req, res) {
     console.log(req.body)
     //if (req.body.idUser && req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
       var idProd
@@ -143,7 +146,8 @@ router
   })
 router
   .route("/allProducts/:page")
-  .get(async function (req, res) {
+  .get(verifyToken, async function (req, res) {
+    console.log(req.userId)
     const resPerPage = 3;
     const page = req.params.page;
 
@@ -170,7 +174,7 @@ router
 
 router
   .route("/products/:id_product")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     productUser.aggregate([{ $unwind: '$products' }, { $match: {'products.idProd': parseInt(req.params.id_product)}}], function (error, product) {
       if (error) {
         res.status(404).send({ message: "not found" });
@@ -183,7 +187,7 @@ router
       res.status(200).send(product);
     });
   })
-  .put(function (req, res) {
+  .put(verifyToken, function (req, res) {
     if (req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
       var idProd = parseInt(req.params.id_product);
     
@@ -213,7 +217,7 @@ router
       res.status(400).send({error: "missing fields"})
     }
   })
-  .delete(function (req, res) {
+  .delete(verifyToken, function (req, res) {
     var idProd = parseInt(req.params.id_product);
 
     productUser.updateOne({"products.idProd": idProd}, {$pull: {products: {"idProd": idProd}}}, function (error, result) {
@@ -233,7 +237,7 @@ router
 // GET PRODUCTOS DEL USUARIO
 router
   .route("/productsUsers/:id_user")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     productUser.aggregate([
       {$match: {'idUser': parseInt(req.params.id_user)} },
       {$lookup: 
@@ -285,7 +289,7 @@ router
 // NEWS FEED
 router
   .route("/newsFeed")
-  .post(async function (req, res) {
+  .post(verifyToken, async function (req, res) {
     var post = new newsFeed();
     if (req.body.idUser && req.body.message) { 
       post.idUser = req.body.idUser;
@@ -309,7 +313,7 @@ router
       res.status(400).send({error: "missing fields"})
     }
   })
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     newsFeed.aggregate([
                       {$lookup: 
                         {from: 'users',localField: 'idUser',
@@ -395,7 +399,7 @@ router
     }
   
   })
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     User.find({ }, function (err, usuarios) {
       if (err) {
         res.send(err);
@@ -407,7 +411,7 @@ router
 
 router
   .route("/users/:id_user")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     User.findById(req.params.id_user, function (error, usuario) {
       if (error) {
         res.status(404).send({ message: "not found" });
@@ -420,7 +424,7 @@ router
       res.status(200).send(usuario);
     }).select('-password');
   })
-  .put(function (req, res) {
+  .put(verifyToken, function (req, res) {
     if (req.body.profile_pic && req.body.name && req.body.lname && req.body.dBirth && req.body.country && req.body.email) {
       User.findById(req.params.id_user, function (err, user) {
         if (err) {
@@ -447,7 +451,7 @@ router
       res.status(400).send({error: "missing fields"})
     }
   })
-  .delete(async function (req, res) {
+  .delete(verifyToken, async function (req, res) {
     try {
       await productUser.deleteOne( { idUser: req.params.id_user}, function (err) {
         if (err) {
@@ -475,7 +479,7 @@ router
 // CARRITO
 router
   .route("/carrito")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     Carrito.find({ }, function (err, carrito) {
       if (err) {
         res.send(err);
@@ -487,7 +491,7 @@ router
 
 router
   .route("/carrito/:id_user")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     Carrito.find({idUser: req.params.id_user}, function (error, carrito) {
       if (error) {
         res.status(404).send({ message: "not found" });
@@ -500,7 +504,7 @@ router
       res.status(200).send(carrito);
     });
   })
-  .post(async function (req, res) {
+  .post(verifyToken, async function (req, res) {
     console.log(req.body);
     if (req.body) {
       var product;
@@ -568,7 +572,7 @@ router
     }
     
   })
-  .delete(function (req, res) {
+  .delete(verifyToken, function (req, res) {
     var idProd = parseInt(req.body.idProd);
 
     Carrito.updateOne({idUser: req.params.id_user}, {$pull: {products: {"idProd": idProd}}}, { "multi": false }, function (error, result) {
@@ -591,7 +595,7 @@ router
 // COMPRA
 router
   .route("/compra")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     Compra.find({ }, function (err, carrito) {
       if (err) {
         res.send(err);
@@ -603,7 +607,7 @@ router
 
 router
   .route("/compra/:id_user")
-  .get(function (req, res) {
+  .get(verifyToken, function (req, res) {
     Compra.find({idUser: req.params.id_user}, function (error, compra) {
       if (error) {
         res.status(404).send({ message: "not found" });
@@ -616,7 +620,7 @@ router
       res.status(200).send(compra);
     }).sort('-_id');
   })
-  .post(async function (req, res) {
+  .post(verifyToken, async function (req, res) {
     var productos;
     var compra = new Compra();
     await Carrito.find({idUser: req.params.id_user}, async function (err, carrito) {
@@ -676,7 +680,7 @@ router
 
 router
   .route("/validarCompra/:id_user")
-  .put(function (req, res) {
+  .put(verifyToken, function (req, res) {
     //if (req.body.validation) {
       Compra.findOne({idUser: req.params.id_user}, function (err, compra) {
         if (err) {
@@ -702,6 +706,23 @@ router
     } */
     
   });
+
+function verifyToken(req, res, next) {
+  if (!req.headers.authorization) {
+    return res.status(401).send({error: "Unauthorized request"})
+  }
+  
+  const token = req.headers.authorization.split(' ')[1];
+
+  if (token === 'null') {
+    return res.status(401).send({error: "Unauthorized request"})
+  }
+
+  const payload = jwt.verify(token, 'secretKey');
+  req.userId = payload._id;
+  next();
+
+}
 
 app.use("/api", router); //url base de nuestro api que tiene las rutas en el routerglobal.fetch = require('node-fetch');
 router.use(function(req, res, next) {
