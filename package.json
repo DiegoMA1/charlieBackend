@@ -4,7 +4,7 @@
   "description": "esto es backend en express",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon server.js"
   },
   "author": "gabriel schlam",
   "license": "ISC",

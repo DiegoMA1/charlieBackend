@@ -87,15 +87,15 @@ router
   .route("/productsUsers")
   .post(verifyToken, async function (req, res) {
     console.log(req.body)
-    //if (req.body.idUser && req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
+    if (req.body.idUser && req.body.name && req.body.condition && req.body.description && req.body.price && req.body.url) {
       var idProd
       await productUser.aggregate([{ $unwind: '$products' }, { $sort: {'products.idProd': -1}},{$limit: 1}], function (err, idProduct) {
         if (err) {
-          res.send(err);
+          res.status(500).send(err);
           return;
         }
         else {
-          console.log(idProduct[0].products.idProd)
+          console.log("idProd: " + idProduct[0].products.idProd)
           idProd = parseInt(idProduct[0].products.idProd)+1;
         }
       })
@@ -112,7 +112,7 @@ router
 
       productUser.findOneAndUpdate({idUser: req.body.idUser}, {$push: {products: producto}}, async function (error, result) {
         if (error) {
-          res.status(404).send({ message: "not found" });
+          res.status(500).send(error);
           return;
         }
         if (result == null) {
@@ -128,22 +128,23 @@ router
                   res.status(400).send({ error: err.message });
               }
             });
-            res.json({ mensaje: "Producto agregado" });
+            res.status(200).send({ message: "Producto agregado" })
           } catch (error) {
             res.status(500).send({ error: error });
           }
         }
         else {
-          res.json({ mensaje: "Producto agregado" })
+          res.status(200).send({ message: "Producto agregado" })
         }
       });
       
-    //}
-    //else {
-      //res.status(400).send({error: "missing fields"})
-    //}
+    }
+    else {
+      res.status(400).send({error: "missing fields"})
+    }
     
   })
+
 router
   .route("/allProducts/:page")
   .get(verifyToken, async function (req, res) {
@@ -155,12 +156,12 @@ router
       console.log(products)
       if (err) {
         console.log(err)
-        res.send(err);
+        res.status(500).send(err);
       }
       else {
         await productUser.count({}, function (err, count) {
           if (err) {
-            res.send(err);
+            res.status(500).send(err);
           }
           else {
             res.status(200).send({products, currentPage: parseInt(page), pages: Math.ceil(count / resPerPage)});
@@ -168,7 +169,6 @@ router
           }
         })
       }
-      //res.status(200).send(products);
     })
   });
 
@@ -177,7 +177,7 @@ router
   .get(verifyToken, function (req, res) {
     productUser.aggregate([{ $unwind: '$products' }, { $match: {'products.idProd': parseInt(req.params.id_product)}}], function (error, product) {
       if (error) {
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       if (product == "") {
@@ -203,14 +203,14 @@ router
 
       productUser.findOneAndUpdate({"products.idProd": idProd}, {$set: {"products.$": producto}}, function (error, result) {
         if (error) {
-          res.status(404).send({ message: "not found" });
+          res.status(500).send(error);
           return;
         }
         if (result == null) {
           res.status(404).send({ result: "not found" });
           return;
         }
-        res.json({ mensaje: "Producto actualizado" })
+        res.status(200).send({ message: "Producto actualizado" })
       });
     }
     else {
@@ -223,14 +223,14 @@ router
     productUser.updateOne({"products.idProd": idProd}, {$pull: {products: {"idProd": idProd}}}, function (error, result) {
       if (error) {
         console.log(error)
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       if (result == null) {
         res.status(404).send({ result: "not found" });
         return;
       }
-      res.json({ mensaje: "Producto eliminado" })
+      res.status(200).send({ message: "Producto eliminado" })
     });
   });
 
@@ -257,7 +257,7 @@ router
     ],function (error, result) {
       console.log("result" + result)
       if (error) {
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       else if (result == null) {
@@ -267,7 +267,7 @@ router
       else if (result == "") {
         User.findById(req.params.id_user, function (error, usuario) {
           if (error) {
-            res.status(404).send({ message: "not found" });
+            res.status(500).send(err);
             return;
           }
           else if (usuario == null) {
@@ -334,7 +334,7 @@ router
                       }
                     ],function (err, result) {
       if (err) {
-        res.send(err);
+        res.status(500).send(err);
         return;
       }
       res.status(200).send(result);
@@ -352,7 +352,7 @@ router
       var user = new User();
       await User.findOne(async function (err, result) {
         if (err) {
-          res.send(err);
+          res.status(500).send(err);
           return;
         }
         else {
@@ -360,12 +360,11 @@ router
           user._id = idUser;
 
           await User.findOne({email: req.body.email}, async function (err, resp) {
-            console.log("resp" + resp)
             if (resp) {
               res.status(400).send({error: "Email already exists"})
             }
             else if (err) {
-              res.send(err);
+              res.status(500).send(err);
             }
             else {
               user.profile_pic = req.body.profile_pic;
@@ -384,7 +383,7 @@ router
                       res.status(400).send({ error: err.message });
                   }
                   else{
-                    res.json({ mensaje: "Usuario creado" });
+                    res.status(200).send({ mensaje: "Usuario creado" });
                   }
                 });
                 
@@ -404,7 +403,7 @@ router
   .get(verifyToken, function (req, res) {
     User.find({ }, function (err, usuarios) {
       if (err) {
-        res.send(err);
+        res.status(500).send(err);
         return;
       }
       res.status(200).send(usuarios);
@@ -416,7 +415,7 @@ router
   .get(verifyToken, function (req, res) {
     User.findById(req.params.id_user, function (error, usuario) {
       if (error) {
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       if (usuario == null) {
@@ -430,7 +429,7 @@ router
     if (req.body.profile_pic && req.body.name && req.body.lname && req.body.dBirth && req.body.country && req.body.email) {
       User.findById(req.params.id_user, function (err, user) {
         if (err) {
-          res.send(err);
+          res.status(500).send(err);
           return;
         }
         user.profile_pic = req.body.profile_pic;
@@ -442,10 +441,10 @@ router
 
         user.save(function (err) {
           if (err) {
-            res.send(err);
+            res.status(500).send(err);
             return;
           }
-          res.json({ message: "usuario actualizado" });
+          res.status(200).send({ message: "usuario actualizado" });
         });
       });
     }
@@ -465,10 +464,10 @@ router
           User.remove({_id: req.params.id_user},
             function (err) {
               if (err) {
-                res.send(err);
+                res.status(500).send(err);
                 return;
               }
-              res.json({ mensaje: "Usuario borrado con exito" });
+              res.status(200).send({ message: "Usuario borrado con exito" });
             }
           );
         }
@@ -484,7 +483,7 @@ router
   .get(verifyToken, function (req, res) {
     Carrito.find({ }, function (err, carrito) {
       if (err) {
-        res.send(err);
+        res.status(500).send(err);
         return;
       }
       res.status(200).send(carrito);
@@ -496,7 +495,7 @@ router
   .get(verifyToken, function (req, res) {
     Carrito.find({idUser: req.params.id_user}, function (error, carrito) {
       if (error) {
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(err);
         return;
       }
       if (carrito == null) {
@@ -513,7 +512,7 @@ router
       Carrito.find({idUser: req.params.id_user, "products.idProd": req.body.idProd}, async function (err, producto) {
         console.log(producto)
         if (err) {
-          res.send(err);
+          res.status(500).send(err);
           return;
         }
         else if (producto != "") {
@@ -523,7 +522,7 @@ router
         else {
           await productUser.aggregate([{ $unwind: '$products' }, { $match: {'products.idProd': parseInt(req.body.idProd)}}, {'$limit': 1}, {$project: {'products':1, _id:0}}], function (err, producto) {
             if (err) {
-              res.send(err);
+              res.status(500).send(err);
               return;
             }
             else {
@@ -534,7 +533,7 @@ router
 
               Carrito.findOneAndUpdate({idUser: req.params.id_user}, {$push: {products: product}}, async function (error, result) {
                 if (error) {
-                  res.status(404).send({ message: "not found" });
+                  res.status(500).send(error);
                   return;
                 }
                 if (result == null) {
@@ -550,7 +549,7 @@ router
                           res.status(400).send({ error: err.message });
                       }
                       else{
-                        res.json({ mensaje: "Producto agregado al carrito" });
+                        res.status(200).send({ mensaje: "Producto agregado al carrito" });
 
                       }
                     });
@@ -559,7 +558,7 @@ router
                   }
                 }
                 else {
-                  res.json({ mensaje: "Producto agregado al carrito" })
+                  res.status(200).send({ mensaje: "Producto agregado al carrito" })
                 }
               });
             }
@@ -581,7 +580,7 @@ router
       console.log(result)
       if (error) {
         console.log(error)
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       if (result == null) {
@@ -589,7 +588,7 @@ router
         return;
       }
       else{
-        res.json({ mensaje: "Producto eliminado del carrito" })
+        res.status(200).send({ mensaje: "Producto eliminado del carrito" })
       }
     });
   });
@@ -600,7 +599,7 @@ router
   .get(verifyToken, function (req, res) {
     Compra.find({ }, function (err, carrito) {
       if (err) {
-        res.send(err);
+        res.status(500).send(err);
         return;
       }
       res.status(200).send(carrito);
@@ -612,7 +611,7 @@ router
   .get(verifyToken, function (req, res) {
     Compra.find({idUser: req.params.id_user}, function (error, compra) {
       if (error) {
-        res.status(404).send({ message: "not found" });
+        res.status(500).send(error);
         return;
       }
       else if (compra == null) {
@@ -627,7 +626,7 @@ router
     var compra = new Compra();
     await Carrito.find({idUser: req.params.id_user}, async function (err, carrito) {
       if (err) {
-        res.send(err);
+        res.status(500).send(err);
         return;
       }
       else {
@@ -640,7 +639,7 @@ router
         productUser.updateOne({"products.idProd": idProd}, {$pull: {products: {"idProd": idProd}}}, async function (error, result) {
           if (error) {
             console.log(error)
-            res.status(404).send({ message: "not found" });
+            res.status(500).send(error);
             return;
           }
           if (result == null) {
@@ -665,10 +664,10 @@ router
               Carrito.remove({idUser: req.params.id_user},
                 function (err) {
                   if (err) {
-                    res.send(err);
+                    res.status(500).send(err);
                     return;
                   }
-                  res.json({ mensaje: "Compra creada con exito" });
+                  res.status(200).send({ mensaje: "Compra creada con exito" });
                 }
               );
             }
@@ -683,10 +682,10 @@ router
 router
   .route("/validarCompra/:id_user")
   .put(verifyToken, function (req, res) {
-    //if (req.body.validation) {
+    if (req.body.validation) {
       Compra.findOne({idUser: req.params.id_user}, function (err, compra) {
         if (err) {
-          res.send(err);
+          res.status(500).send(err);
           return;
         }
         compra.validation = req.body.validation;
@@ -696,16 +695,16 @@ router
 
         compra.save(function (err) {
           if (err) {
-            res.send(err);
+            res.status(500).send(err);
             return;
           }
-          res.json({ message: "Validacion de compra agregada" });
+          res.status(200).send({ message: "Validacion de compra agregada" });
         });
       }).sort('-_id');
-    //}
-   /*  else {
+    }
+    else {
       res.status(400).send({error: "missing fields"})
-    } */
+    }
     
   });
 

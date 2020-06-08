@@ -2,9 +2,18 @@ var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 var ComprasSchema = new Schema({
-    idUser: Number,
-    products: Array,
-    address: Array,
+    idUser: {
+        type: Number,
+        required: true,
+    },
+    products: {
+        type: Array,
+        required: true,
+    },
+    address: {
+        type: Array,
+        required: true,
+    },
     validation: Boolean,
     comment: String
 }, { versionKey: false });

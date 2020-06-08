@@ -2,7 +2,10 @@ var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 var CarritosSchema = new Schema({
-    idUser: Number,
+    idUser: {
+        type: Number,
+        required: true,
+    },
     products: Array
 }, { versionKey: false });
 
