@@ -348,6 +348,7 @@ router
   .post(async function (req, res) {
     if (req.body.profile_pic && req.body.name && req.body.lname && req.body.dBirth && req.body.country && req.body.email && req.body.password) {
       var idUser;
+      console.log(req.body)
       var user = new User();
       await User.findOne(async function (err, result) {
         if (err) {
@@ -358,8 +359,9 @@ router
           idUser = parseInt(result._id)+1;
           user._id = idUser;
 
-          await User.find({email: req.body.email}, async function (err, result) {
-            if (result) {
+          await User.findOne({email: req.body.email}, async function (err, resp) {
+            console.log("resp" + resp)
+            if (resp) {
               res.status(400).send({error: "Email already exists"})
             }
             else if (err) {
