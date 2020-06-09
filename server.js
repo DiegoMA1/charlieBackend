@@ -67,7 +67,7 @@ router
           return;
         }
         else {
-          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "30s"})
+          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "10m"})
           res.status(200).send({ message: "Login success", _id: usuarioDB._id, token: token});
         }
       });
