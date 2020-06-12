@@ -725,6 +725,31 @@ function verifyToken(req, res, next) {
 
 }
 
+router
+  .route("/compras/:id_product")
+  .get(verifyToken, function (req, res) {
+    console.log("hola")
+    Compra.aggregate([{$unwind: '$products'},{
+      $group: {
+          _id: "$products"
+      }
+  }], function (error, product) {
+      if (error) {
+        res.status(500).send(error);
+        return;
+      }
+      console.log('Nisim')
+      if (product == "") {
+        res.status(404).send({ product: "not found" });
+        return;
+      }
+      
+      res.status(200).send(product);
+    });
+  })
+
+
+
 app.use("/api", router); //url base de nuestro api que tiene las rutas en el routerglobal.fetch = require('node-fetch');
 router.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
