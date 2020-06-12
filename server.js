@@ -724,7 +724,7 @@ function verifyToken(req, res, next) {
   next();
 
 }
-
+//Show products in Main Admin
 router
   .route("/compras/:id_product")
   .get(verifyToken, function (req, res) {
@@ -747,6 +747,25 @@ router
       res.status(200).send(product);
     });
   })
+
+  //Update Status
+  router
+    .route('/compras/:id_product/:status')
+    .put(verifyToken, function(req,res){
+    Compra.updateOne({"products.idProd" : {$eq:req.params.id_product} }, { $set: { "status": req.params.status }}, async function (error, result) {
+      if (error) {
+        console.log(error)
+        res.status(500).send(error);
+        return;
+      }
+      if (result == null) {
+        res.status(404).send({ result: "not found" });
+        return;
+      }
+      res.status(200).send({mensage : "Status cambiado" });
+    }
+    )
+    });
 
 
 

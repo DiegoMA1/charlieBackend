@@ -6,6 +6,10 @@ var ComprasSchema = new Schema({
         type: Number,
         required: true,
     },
+    status: {
+        type: String,
+        required: true,
+    },
     products: {
         type: Array,
         required: true,
