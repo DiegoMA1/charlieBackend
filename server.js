@@ -67,7 +67,7 @@ router
           return;
         }
         else {
-          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "1h"})
+          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "1d"})
           res.status(200).send({ message: "Login success", _id: usuarioDB._id, token: token});
         }
       });
@@ -652,6 +652,7 @@ router
      
           compra.idUser = req.params.id_user;
           compra.address = req.body.address;
+          compra.status = "comprado";
 
         try {
           await compra.save(function (err) {
