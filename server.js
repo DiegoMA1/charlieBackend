@@ -67,7 +67,7 @@ router
           return;
         }
         else {
-          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "10m"})
+          const token = jwt.sign({_id: usuarioDB._id}, 'secretKey', {expiresIn: "1h"})
           res.status(200).send({ message: "Login success", _id: usuarioDB._id, token: token});
         }
       });
@@ -726,9 +726,8 @@ function verifyToken(req, res, next) {
 }
 //Show products in Main Admin
 router
-  .route("/compras/:id_product")
+  .route("/compras")
   .get(verifyToken, function (req, res) {
-    console.log("hola")
     Compra.aggregate([{$unwind: '$products'},{
       $group: {
           _id: "$products"
@@ -738,7 +737,6 @@ router
         res.status(500).send(error);
         return;
       }
-      console.log('Nisim')
       if (product == "") {
         res.status(404).send({ product: "not found" });
         return;
@@ -750,9 +748,25 @@ router
 
   //Update Status
   router
-    .route('/compras/:id_product/:status')
+    .route('/compras/:id_product')
+    .get(verifyToken, function (req, res) {
+      Compra.findOne({"products.idProd" : {$eq:parseInt(req.params.id_product)} }, async function (error, product) {
+        if (error) {
+          res.status(500).send(error);
+          return;
+        }
+        if (product == "") {
+          res.status(404).send({ product: "not found" });
+          return;
+        }
+        
+        res.status(200).send(product);
+      });
+    })
     .put(verifyToken, function(req,res){
-    Compra.updateOne({"products.idProd" : {$eq:req.params.id_product} }, { $set: { "status": req.params.status }}, async function (error, result) {
+      console.log("req.params.id_product" + req.params.id_product)
+    Compra.findOneAndUpdate({"products.idProd" : {$eq:parseInt(req.params.id_product)} }, { $set: { "status": req.body.status }}, async function (error, result) {
+      console.log(result)
       if (error) {
         console.log(error)
         res.status(500).send(error);
